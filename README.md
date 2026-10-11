@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <div align="center">
 
 # DevNest Labs
@@ -139,3 +140,7 @@ devnestlabs/
 ## 📄 License
 This project is licensed under the [MIT License](LICENSE).
 DevNest Labs © 2026. Built with React, Spring Boot, and Claude.
+=======
+# devnest-labs
+An AI-powered developer workspace for explaining code, understanding errors, and generating documentation.
+>>>>>>> caae90dffc23b2499846eeb31921046a309454e9

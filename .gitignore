@@ -1,0 +1,30 @@
+# DevNest Labs - Git Ignore
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/
+*.iml
+
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.*.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# Java / Maven Backend
+backend/target/
+backend/.mvn/
+backend/*.jar
+backend/*.war
+
+# Environment Secrets
+.env
+*.env
+application-secret.properties
+application-secret.yml

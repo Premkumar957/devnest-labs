@@ -28,14 +28,14 @@ export default function PrivacyModal({ isOpen, onClose }) {
           </p>
           <ul className="feature-bullets" style={{ marginBottom: '1rem' }}>
             <li>Your input is transmitted securely via HTTPS directly to our Spring Boot backend.</li>
-            <li>The backend validates the length and content boundaries before transmitting to Anthropic's Claude API.</li>
+            <li>The backend validates the length and content boundaries before transmitting to Google's Gemini API.</li>
             <li>Requests are processed in memory and are <strong>not</strong> stored permanently in any relational database during MVP usage.</li>
             <li>Recent analyses shown in your history drawer are stored strictly on your local browser machine via HTML5 LocalStorage.</li>
           </ul>
 
           <h4>API Key Protection & Confidentiality</h4>
           <p>
-            Your browser never communicates with Anthropic Claude directly. All Claude API keys and model credentials remain secured strictly server-side behind Spring Boot environment variables.
+            Your browser never communicates with Google Gemini directly. All Gemini API keys and model credentials remain secured strictly server-side behind Spring Boot environment variables.
           </p>
         </div>
       </div>

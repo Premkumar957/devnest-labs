@@ -37,7 +37,7 @@ export default function LoadingIndicator({ activeFeature }) {
     <div className="loading-container">
       <div className="loader-spinner" />
       <div>
-        <div className="loading-title">Analyzing with Claude AI</div>
+        <div className="loading-title">Analyzing with Gemini AI</div>
         <div className="loading-tip">{currentTips[tipIndex]}</div>
       </div>
     </div>

@@ -19,7 +19,7 @@ export default function Home({ onOpenWorkspace, openModal }) {
       <section className="hero-section">
         <div className="hero-pill">
           <Sparkles size={14} />
-          <span>DevNest Labs • Powered by Spring Boot & Claude 3.5</span>
+          <span>DevNest Labs • Powered by Spring Boot & Gemini 3.8</span>
         </div>
 
         <h1 className="hero-title">
@@ -133,9 +133,9 @@ export default function Home({ onOpenWorkspace, openModal }) {
 
             <div className="arch-step-item">
               <div className="arch-step-num">STEP 03</div>
-              <div className="arch-step-title">Claude 3.5 Sonnet Engine</div>
+              <div className="arch-step-title">Gemini 3.8 Flash Engine</div>
               <div className="arch-step-desc">
-                Secure server-to-server Anthropic Messages API call generating structured, validated JSON output.
+                Secure server-to-server Google Gemini REST API call generating structured, validated JSON output.
               </div>
             </div>
 

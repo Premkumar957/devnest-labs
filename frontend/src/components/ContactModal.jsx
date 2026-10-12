@@ -16,7 +16,7 @@ export default function ContactModal({ isOpen, onClose }) {
 
         <div className="modal-body">
           <p>
-            Have feedback, feature requests, or partnership inquiries regarding the DevNest Labs workspace or our Claude for Startups project?
+            Have feedback, feature requests, or partnership inquiries regarding the DevNest Labs workspace or our Gemini AI project?
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.25rem' }}>

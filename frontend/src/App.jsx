@@ -6,7 +6,9 @@ import HistoryDrawer from './components/HistoryDrawer';
 import AboutModal from './components/AboutModal';
 import PrivacyModal from './components/PrivacyModal';
 import ContactModal from './components/ContactModal';
+import AuthModal from './components/AuthModal';
 import { aiService } from './services/aiService';
+import { authService } from './services/authService';
 
 export default function App() {
   const [currentView, setCurrentView] = useState('workspace'); // 'home' or 'workspace'
@@ -14,6 +16,11 @@ export default function App() {
   const [backendStatus, setBackendStatus] = useState('CHECKING');
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [activeModal, setActiveModal] = useState(null); // 'about' | 'privacy' | 'contact' | null
+
+  // Authentication State
+  const [currentUser, setCurrentUser] = useState(() => authService.getUser());
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState('login');
 
   // Local storage history
   const [history, setHistory] = useState(() => {
@@ -30,6 +37,19 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('devnest_theme', theme);
   }, [theme]);
+
+  // Verify and sync current user on startup
+  useEffect(() => {
+    const syncUser = async () => {
+      const user = await authService.getMe();
+      if (user) {
+        setCurrentUser(user);
+      } else if (!authService.getToken()) {
+        setCurrentUser(null);
+      }
+    };
+    syncUser();
+  }, []);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
@@ -68,9 +88,22 @@ export default function App() {
     localStorage.removeItem('devnest_history');
   };
 
-  const handleSelectHistoryItem = (item) => {
+  const handleSelectHistoryItem = () => {
     setCurrentView('workspace');
-    // Note: Can enhance to propagate to workspace if desired
+  };
+
+  const handleOpenAuthModal = (mode = 'login') => {
+    setAuthModalMode(mode);
+    setIsAuthModalOpen(true);
+  };
+
+  const handleAuthSuccess = (user) => {
+    setCurrentUser(user);
+  };
+
+  const handleLogout = () => {
+    authService.logout();
+    setCurrentUser(null);
   };
 
   return (
@@ -85,6 +118,9 @@ export default function App() {
         historyCount={history.length}
         setIsHistoryOpen={setIsHistoryOpen}
         openModal={setActiveModal}
+        currentUser={currentUser}
+        onOpenAuthModal={handleOpenAuthModal}
+        onLogout={handleLogout}
       />
 
       {/* Main Content Area */}
@@ -108,6 +144,14 @@ export default function App() {
         history={history}
         onSelectHistoryItem={handleSelectHistoryItem}
         onClearHistory={handleClearHistory}
+      />
+
+      {/* Authentication Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialMode={authModalMode}
+        onAuthSuccess={handleAuthSuccess}
       />
 
       {/* Info Modals */}
@@ -140,14 +184,14 @@ export default function App() {
             <a 
               href="https://devnestlabs.shop" 
               target="_blank" 
-              rel="noopener noreferrer"
+              rel="noopener noreferrer" 
               style={{ color: 'var(--text-secondary)' }}
             >
               devnestlabs.shop
             </a>
           </div>
           <div className="footer-copy">
-            DevNest Labs © 2026 • AI Developer Workspace • Powered by Claude & Spring Boot
+            DevNest Labs © 2026 • AI Developer Workspace • Powered by Gemini & Spring Boot
           </div>
         </div>
       </footer>

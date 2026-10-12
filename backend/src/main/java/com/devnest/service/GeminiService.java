@@ -1,6 +1,6 @@
 package com.devnest.service;
 
-import com.devnest.config.ClaudeProperties;
+import com.devnest.config.GeminiProperties;
 import com.devnest.dto.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -17,14 +17,14 @@ import java.time.Duration;
 import java.util.*;
 
 @Service
-public class ClaudeService {
+public class GeminiService {
 
-    private static final Logger log = LoggerFactory.getLogger(ClaudeService.class);
-    private final ClaudeProperties properties;
+    private static final Logger log = LoggerFactory.getLogger(GeminiService.class);
+    private final GeminiProperties properties;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
 
-    public ClaudeService(ClaudeProperties properties, ObjectMapper objectMapper) {
+    public GeminiService(GeminiProperties properties, ObjectMapper objectMapper) {
         this.properties = properties;
         this.objectMapper = objectMapper;
         this.httpClient = HttpClient.newBuilder()
@@ -41,7 +41,7 @@ public class ClaudeService {
     }
 
     /**
-     * Explain Code using Claude API
+     * Explain Code using Google Gemini API
      */
     public ExplainResponse explainCode(ExplainRequest request) {
         String systemPrompt = """
@@ -68,23 +68,23 @@ public class ClaudeService {
 
         if (properties.hasApiKey()) {
             try {
-                String rawAiResponse = callClaude(systemPrompt, userPrompt);
+                String rawAiResponse = callGemini(systemPrompt, userPrompt);
                 ExplainResponse parsed = parseExplainResponse(rawAiResponse);
                 if (parsed != null) {
                     return parsed;
                 }
             } catch (Exception e) {
-                log.warn("Claude API call failed ({}), falling back to intelligent offline engine", e.getMessage());
+                log.warn("Gemini API call failed ({}), falling back to intelligent offline engine", e.getMessage());
             }
         } else {
-            log.info("ANTHROPIC_API_KEY is not configured. Utilizing DevNest Intelligent Local Engine.");
+            log.info("GEMINI_API_KEY is not configured. Utilizing DevNest Intelligent Local Engine.");
         }
 
         return generateLocalExplainResponse(request);
     }
 
     /**
-     * Debug Error using Claude API
+     * Debug Error using Google Gemini API
      */
     public DebugResponse debugError(DebugRequest request) {
         String systemPrompt = """
@@ -132,23 +132,23 @@ public class ClaudeService {
 
         if (properties.hasApiKey()) {
             try {
-                String rawAiResponse = callClaude(systemPrompt, userPrompt);
+                String rawAiResponse = callGemini(systemPrompt, userPrompt);
                 DebugResponse parsed = parseDebugResponse(rawAiResponse);
                 if (parsed != null) {
                     return parsed;
                 }
             } catch (Exception e) {
-                log.warn("Claude API call for debug failed ({}), falling back to intelligent offline engine", e.getMessage());
+                log.warn("Gemini API call for debug failed ({}), falling back to intelligent offline engine", e.getMessage());
             }
         } else {
-            log.info("ANTHROPIC_API_KEY is not configured. Utilizing DevNest Intelligent Local Engine.");
+            log.info("GEMINI_API_KEY is not configured. Utilizing DevNest Intelligent Local Engine.");
         }
 
         return generateLocalDebugResponse(request);
     }
 
     /**
-     * Generate Documentation using Claude API
+     * Generate Documentation using Google Gemini API
      */
     public DocumentResponse generateDocumentation(DocumentRequest request) {
         String systemPrompt = """
@@ -176,64 +176,96 @@ public class ClaudeService {
 
         if (properties.hasApiKey()) {
             try {
-                String rawAiResponse = callClaude(systemPrompt, userPrompt);
+                String rawAiResponse = callGemini(systemPrompt, userPrompt);
                 DocumentResponse parsed = parseDocumentResponse(rawAiResponse);
                 if (parsed != null) {
                     return parsed;
                 }
             } catch (Exception e) {
-                log.warn("Claude API call for documentation failed ({}), falling back to intelligent offline engine", e.getMessage());
+                log.warn("Gemini API call for documentation failed ({}), falling back to intelligent offline engine", e.getMessage());
             }
         } else {
-            log.info("ANTHROPIC_API_KEY is not configured. Utilizing DevNest Intelligent Local Engine.");
+            log.info("GEMINI_API_KEY is not configured. Utilizing DevNest Intelligent Local Engine.");
         }
 
         return generateLocalDocumentResponse(request);
     }
 
     /**
-     * Call Anthropic Messages API
+     * Call Google Gemini generateContent REST API
      */
-    private String callClaude(String systemPrompt, String userPrompt) throws Exception {
-        Map<String, Object> message = new LinkedHashMap<>();
-        message.put("role", "user");
-        message.put("content", userPrompt);
-
+    private String callGemini(String systemPrompt, String userPrompt) throws Exception {
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("model", properties.getModel());
-        payload.put("max_tokens", properties.getMaxTokens());
-        payload.put("system", systemPrompt);
-        payload.put("messages", List.of(message));
+
+        // 1. System instruction (if supported/present)
+        if (systemPrompt != null && !systemPrompt.isBlank()) {
+            payload.put("system_instruction", Map.of(
+                    "parts", List.of(Map.of("text", systemPrompt))
+            ));
+        }
+
+        // 2. User prompt content
+        Map<String, Object> userContent = Map.of(
+                "role", "user",
+                "parts", List.of(Map.of("text", userPrompt))
+        );
+        payload.put("contents", List.of(userContent));
+
+        // 3. Generation configuration for structured JSON output
+        Map<String, Object> genConfig = new LinkedHashMap<>();
+        genConfig.put("responseMimeType", "application/json");
+        genConfig.put("temperature", 0.2);
+        genConfig.put("maxOutputTokens", properties.getMaxTokens());
+        payload.put("generationConfig", genConfig);
 
         String requestBodyJson = objectMapper.writeValueAsString(payload);
 
+        // Normalize model URL
+        String base = properties.getApiUrl().replaceAll("/+$", "");
+        String model = properties.getModel().trim();
+        if (model.startsWith("models/")) {
+            model = model.substring(7);
+        }
+        String endpoint;
+        if (base.endsWith("/models")) {
+            endpoint = base + "/" + model + ":generateContent";
+        } else {
+            endpoint = base + "/models/" + model + ":generateContent";
+        }
+
         HttpRequest httpRequest = HttpRequest.newBuilder()
-                .uri(URI.create(properties.getApiUrl()))
+                .uri(URI.create(endpoint))
                 .timeout(Duration.ofSeconds(properties.getTimeoutSeconds()))
                 .header("Content-Type", "application/json")
-                .header("x-api-key", properties.getApiKey())
-                .header("anthropic-version", "2023-06-01")
+                .header("x-goog-api-key", properties.getApiKey())
                 .POST(HttpRequest.BodyPublishers.ofString(requestBodyJson))
                 .build();
 
         HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() != 200) {
-            log.error("Anthropic API returned status {}: {}", response.statusCode(), response.body());
-            throw new RuntimeException("Claude API error: HTTP " + response.statusCode() + " - " + response.body());
+            log.error("Google Gemini API returned status {}: {}", response.statusCode(), response.body());
+            throw new RuntimeException("Gemini API error: HTTP " + response.statusCode() + " - " + response.body());
         }
 
         JsonNode rootNode = objectMapper.readTree(response.body());
-        JsonNode contentArray = rootNode.get("content");
-        if (contentArray != null && contentArray.isArray() && !contentArray.isEmpty()) {
-            for (JsonNode item : contentArray) {
-                if ("text".equals(item.path("type").asText())) {
-                    return item.path("text").asText();
+        JsonNode candidates = rootNode.path("candidates");
+        if (candidates.isArray() && !candidates.isEmpty()) {
+            JsonNode parts = candidates.get(0).path("content").path("parts");
+            if (parts.isArray() && !parts.isEmpty()) {
+                StringBuilder sb = new StringBuilder();
+                for (JsonNode part : parts) {
+                    if (part.has("text")) {
+                        sb.append(part.path("text").asText());
+                    }
+                }
+                if (!sb.isEmpty()) {
+                    return sb.toString();
                 }
             }
         }
 
-        throw new RuntimeException("No text block in Claude API response");
+        throw new RuntimeException("No text candidates returned in Gemini API response: " + response.body());
     }
 
     private String cleanJsonString(String raw) {
@@ -260,16 +292,16 @@ public class ClaudeService {
         try {
             String json = cleanJsonString(raw);
             JsonNode node = objectMapper.readTree(json);
-            String summary = node.path("summary").asText("Code explanation generated by Claude.");
+            String summary = node.path("summary").asText("Code explanation generated by Gemini.");
             List<String> steps = jsonArrayToList(node.path("steps"));
             List<String> keyComponents = jsonArrayToList(node.path("keyComponents"));
             String example = node.path("example").asText("");
             List<String> potentialIssues = jsonArrayToList(node.path("potentialIssues"));
             return new ExplainResponse(summary, steps, keyComponents, example, potentialIssues, raw);
         } catch (JsonProcessingException e) {
-            log.warn("Failed to parse Claude JSON response as ExplainResponse: {}", e.getMessage());
+            log.warn("Failed to parse Gemini JSON response as ExplainResponse: {}", e.getMessage());
             return new ExplainResponse(
-                    "Analysis completed by Claude AI.",
+                    "Analysis completed by Gemini AI.",
                     List.of("Executed automated semantic code inspection."),
                     List.of(),
                     "",
@@ -291,9 +323,9 @@ public class ClaudeService {
             String confidenceLevel = node.path("confidenceLevel").asText("High");
             return new DebugResponse(errorMeaning, likelyCauses, suggestedSolution, correctedCode, verificationSteps, confidenceLevel, raw);
         } catch (JsonProcessingException e) {
-            log.warn("Failed to parse Claude JSON response as DebugResponse: {}", e.getMessage());
+            log.warn("Failed to parse Gemini JSON response as DebugResponse: {}", e.getMessage());
             return new DebugResponse(
-                    "Error analysis completed by Claude AI.",
+                    "Error analysis completed by Gemini AI.",
                     List.of("Root cause identified in submitted snippet or stack trace."),
                     raw,
                     "",
@@ -308,7 +340,7 @@ public class ClaudeService {
         try {
             String json = cleanJsonString(raw);
             JsonNode node = objectMapper.readTree(json);
-            String summary = node.path("summary").asText("Technical documentation generated by Claude.");
+            String summary = node.path("summary").asText("Technical documentation generated by Gemini.");
             List<String> parameters = jsonArrayToList(node.path("parameters"));
             String returnValue = node.path("returnValue").asText("");
             List<String> exceptions = jsonArrayToList(node.path("exceptions"));
@@ -316,9 +348,9 @@ public class ClaudeService {
             String generatedDocumentation = node.path("generatedDocumentation").asText(raw);
             return new DocumentResponse(summary, parameters, returnValue, exceptions, exampleUsage, generatedDocumentation, raw);
         } catch (JsonProcessingException e) {
-            log.warn("Failed to parse Claude JSON response as DocumentResponse: {}", e.getMessage());
+            log.warn("Failed to parse Gemini JSON response as DocumentResponse: {}", e.getMessage());
             return new DocumentResponse(
-                    "Documentation generated by Claude AI.",
+                    "Documentation generated by Gemini AI.",
                     List.of(),
                     "",
                     List.of(),
@@ -346,7 +378,6 @@ public class ClaudeService {
     private ExplainResponse generateLocalExplainResponse(ExplainRequest request) {
         String code = request.code().trim();
         String lang = request.getSanitizedLanguage().toUpperCase();
-        String level = request.getSanitizedLevel();
 
         boolean isMathOrAdd = code.toLowerCase().contains("add") || code.contains("+") || code.toLowerCase().contains("sum");
         boolean hasLoop = code.contains("for") || code.contains("while") || code.contains("forEach") || code.contains("stream");

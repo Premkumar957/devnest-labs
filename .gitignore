@@ -28,3 +28,8 @@ backend/*.war
 *.env
 application-secret.properties
 application-secret.yml
+
+# Databases
+*.db
+*.db-shm
+*.db-wal

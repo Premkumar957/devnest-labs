@@ -4,11 +4,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConfigurationProperties(prefix = "devnest.claude")
-public class ClaudeProperties {
+@ConfigurationProperties(prefix = "devnest.gemini")
+public class GeminiProperties {
+
     private String apiKey = "";
-    private String model = "claude-3-5-sonnet-20241022";
-    private String apiUrl = "https://api.anthropic.com/v1/messages";
+    private String model = "gemini-3.8-flash";
+    private String apiUrl = "https://generativelanguage.googleapis.com/v1beta/models";
     private int timeoutSeconds = 45;
     private int maxTokens = 2500;
 
@@ -17,7 +18,7 @@ public class ClaudeProperties {
     }
 
     public void setApiKey(String apiKey) {
-        this.apiKey = apiKey;
+        this.apiKey = apiKey != null ? apiKey.trim() : "";
     }
 
     public String getModel() {
@@ -25,7 +26,7 @@ public class ClaudeProperties {
     }
 
     public void setModel(String model) {
-        this.model = model;
+        this.model = model != null ? model.trim() : "gemini-3.8-flash";
     }
 
     public String getApiUrl() {
@@ -33,7 +34,7 @@ public class ClaudeProperties {
     }
 
     public void setApiUrl(String apiUrl) {
-        this.apiUrl = apiUrl;
+        this.apiUrl = apiUrl != null ? apiUrl.trim() : "https://generativelanguage.googleapis.com/v1beta/models";
     }
 
     public int getTimeoutSeconds() {
@@ -41,7 +42,7 @@ public class ClaudeProperties {
     }
 
     public void setTimeoutSeconds(int timeoutSeconds) {
-        this.timeoutSeconds = timeoutSeconds;
+        this.timeoutSeconds = timeoutSeconds > 0 ? timeoutSeconds : 45;
     }
 
     public int getMaxTokens() {
@@ -49,7 +50,7 @@ public class ClaudeProperties {
     }
 
     public void setMaxTokens(int maxTokens) {
-        this.maxTokens = maxTokens;
+        this.maxTokens = maxTokens > 0 ? maxTokens : 2500;
     }
 
     public boolean hasApiKey() {

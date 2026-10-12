@@ -1,7 +1,7 @@
 package com.devnest.controller;
 
 import com.devnest.dto.HealthResponse;
-import com.devnest.service.ClaudeService;
+import com.devnest.service.GeminiService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,17 +14,18 @@ import java.util.Map;
 @RequestMapping("/api/v1/health")
 public class HealthController {
 
-    private final ClaudeService claudeService;
+    private final GeminiService geminiService;
 
-    public HealthController(ClaudeService claudeService) {
-        this.claudeService = claudeService;
+    public HealthController(GeminiService geminiService) {
+        this.geminiService = geminiService;
     }
 
     @GetMapping
     public ResponseEntity<HealthResponse> checkHealth() {
         Map<String, Object> details = Map.of(
-                "claudeApiConfigured", claudeService.isConfigured(),
-                "activeModel", claudeService.getActiveModel(),
+                "geminiApiConfigured", geminiService.isConfigured(),
+                "claudeApiConfigured", geminiService.isConfigured(),
+                "activeModel", geminiService.getActiveModel(),
                 "javaVersion", System.getProperty("java.version"),
                 "uptimeMillis", System.currentTimeMillis()
         );

@@ -140,7 +140,7 @@ export default function ResultPanel({
             </div>
             <div className="empty-state-title">Ready for Analysis</div>
             <div className="empty-state-desc">
-              Paste your source code or error details on the left and click analyze to receive structured Claude insights.
+              Paste your source code or error details on the left and click analyze to receive structured Gemini insights.
             </div>
           </div>
         )}

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <div align="center">
 
 # DevNest Labs
@@ -8,12 +7,12 @@
 [![Java 21](https://img.shields.io/badge/Java-21_LTS-ED8B00?logo=openjdk&logoColor=white)](https://www.oracle.com/java/)
 [![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-8.3-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
-[![Claude 3.5 Sonnet](https://img.shields.io/badge/Claude_API-3.5_Sonnet-D97706?logo=anthropic&logoColor=white)](https://www.anthropic.com/)
+[![Gemini 3.8 Flash](https://img.shields.io/badge/Google_Gemini-3.8_Flash-4285F4?logo=google&logoColor=white)](https://ai.google.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **An intelligent developer workspace engineered to solve the three core daily bottlenecks: understanding unfamiliar source code, debugging cryptic errors, and generating enterprise technical documentation.**
 
-[Explore Architecture](docs/ARCHITECTURE.md) • [REST API Spec](docs/API_SPECIFICATION.md) • [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) • [Claude for Startups Proposal](docs/CLAUDE_FOR_STARTUPS_PROPOSAL.md)
+[Explore Architecture](docs/ARCHITECTURE.md) • [REST API Spec](docs/API_SPECIFICATION.md) • [Deployment Guide](docs/DEPLOYMENT_GUIDE.md)
 
 </div>
 
@@ -35,15 +34,15 @@
 graph LR
     Browser["React 19 Frontend<br/>(Vite • Glassmorphic UI)"]
     Backend["Spring Boot 3 API<br/>(Java 21 • Port 8080)"]
-    Claude["Anthropic Claude API<br/>(Claude 3.5 Sonnet)"]
+    Gemini["Google Gemini API<br/>(Gemini 3.8 Flash)"]
 
     Browser -->|"POST /api/v1/ai/explain<br/>POST /api/v1/ai/debug<br/>POST /api/v1/ai/document"| Backend
-    Backend -->|"HTTPS Messages API<br/>(Secure Server-Side Key)"| Claude
-    Claude -->|"Structured JSON Schema"| Backend
+    Backend -->|"HTTPS generateContent REST API<br/>(Secure Server-Side Key)"| Gemini
+    Gemini -->|"Structured JSON Schema"| Backend
     Backend -->|"Sanitized JSON Response"| Browser
 ```
 
-> **Security First:** The frontend never handles Anthropic API keys. All credentials reside strictly in backend server environment variables (`ANTHROPIC_API_KEY`), protected behind Spring Boot CORS, validation, and error sanitization filters.
+> **Security First:** The frontend never handles Gemini API keys. All credentials reside strictly in backend server environment variables (`GEMINI_API_KEY` or `GOOGLE_API_KEY`), protected behind Spring Boot CORS, validation, and error sanitization filters.
 
 ---
 
@@ -58,8 +57,8 @@ graph LR
 ```powershell
 cd backend
 
-# (Optional) Export your Anthropic API Key (runs with intelligent local engine if omitted)
-$env:ANTHROPIC_API_KEY="sk-ant-api03-..."
+# (Optional) Export your Google Gemini API Key
+$env:GEMINI_API_KEY="AIzaSy..."
 
 # Run Spring Boot
 mvn spring-boot:run
@@ -94,8 +93,8 @@ cd backend
 mvn test
 ```
 **Test Coverage:**
-- `GET /api/v1/health` — Verifies service status, active model, and uptime.
-- `POST /api/v1/ai/explain` — Verifies structured response mapping and AST breakdown.
+- `GET /api/v1/health` — Verifies service status, active model (`gemini-3.8-flash`), and uptime.
+- `POST /api/v1/ai/explain` — Verifies structured response mapping and semantic breakdown.
 - `POST /api/v1/ai/debug` — Verifies error cause ranking and corrected code generation.
 - `POST /api/v1/ai/document` — Verifies Javadoc and Markdown doc generation.
 - Validation bounds checking — Confirms 400 Bad Request error responses on invalid/blank inputs.
@@ -118,8 +117,8 @@ devnestlabs/
 ├── backend/                      # Java 21 + Spring Boot 3 API
 │   ├── src/main/java/com/devnest/
 │   │   ├── controller/           # AiController & HealthController
-│   │   ├── service/              # ClaudeService & Offline Fallback Engine
-│   │   ├── config/               # CorsConfig & ClaudeProperties
+│   │   ├── service/              # GeminiService & Offline Fallback Engine
+│   │   ├── config/               # CorsConfig & GeminiProperties
 │   │   ├── dto/                  # Request & Response Records
 │   │   └── exception/            # GlobalExceptionHandler
 │   ├── src/main/resources/       # application.yml
@@ -128,8 +127,7 @@ devnestlabs/
 ├── docs/                         # Project Specifications
 │   ├── ARCHITECTURE.md           # Detailed architecture breakdown
 │   ├── API_SPECIFICATION.md      # OpenAPI/REST endpoints contract
-│   ├── DEPLOYMENT_GUIDE.md       # Production hosting & DNS guide
-│   └── CLAUDE_FOR_STARTUPS_PROPOSAL.md # Anthropic Startup Pitch
+│   └── DEPLOYMENT_GUIDE.md       # Production hosting & DNS guide
 ├── .gitignore
 ├── LICENSE                       # MIT License
 └── README.md
@@ -139,8 +137,4 @@ devnestlabs/
 
 ## 📄 License
 This project is licensed under the [MIT License](LICENSE).
-DevNest Labs © 2026. Built with React, Spring Boot, and Claude.
-=======
-# devnest-labs
-An AI-powered developer workspace for explaining code, understanding errors, and generating documentation.
->>>>>>> caae90dffc23b2499846eeb31921046a309454e9
+DevNest Labs © 2026. Built with React, Spring Boot, and Google Gemini API.

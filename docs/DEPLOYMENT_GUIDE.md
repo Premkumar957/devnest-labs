@@ -10,14 +10,14 @@ This guide details instructions for running DevNest Labs locally, building relea
 - Java 21 LTS (`java -version`)
 - Apache Maven 3.9+ (`mvn -v`)
 - Node.js 20+ & npm 10+ (`node -v`, `npm -v`)
-- Optional: Anthropic Claude API Key (`ANTHROPIC_API_KEY`)
+- Google Gemini API Key (`GEMINI_API_KEY`)
 
 ### Step 1: Start the Spring Boot Backend
 ```powershell
 cd c:\Inflexion\devnestlabs\backend
 
-# Set your Anthropic API Key (Optional; offline engine runs if omitted)
-$env:ANTHROPIC_API_KEY="sk-ant-api03-..."
+# Set your Gemini API Key (Optional; defaults to configured key in application.yml or offline engine)
+$env:GEMINI_API_KEY="AIzaSy..."
 
 # Run Spring Boot
 mvn spring-boot:run
@@ -58,39 +58,42 @@ Produces production bundle in: `frontend/dist/`.
 
 ## 3. Containerized Deployment (Docker)
 
-### Dockerfile for Backend (`backend/Dockerfile`)
-```dockerfile
-FROM eclipse-temurin:21-jre-alpine
-VOLUME /tmp
-ARG JAR_FILE=target/devnest-backend-1.0.0.jar
-COPY ${JAR_FILE} app.jar
-ENV PORT=8080
-EXPOSE 8080
-ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom","-jar","/app.jar"]
-```
+```powershell
+# Build backend image
+docker build -t devnest-backend:latest ./backend
 
-### Dockerfile for Frontend (`frontend/Dockerfile`)
-```dockerfile
-FROM nginx:alpine
-COPY dist /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+# Build frontend image
+docker build -t devnest-frontend:latest ./frontend
+```
+Run containers with environment variable:
+```powershell
+docker run -d -p 8080:8080 -e GEMINI_API_KEY="AIzaSy..." devnest-backend:latest
 ```
 
 ---
 
-## 4. Deploying Online & Domain Setup (`devnestlabs.shop`)
+## 4. Database Migration: Switching from SQLite to MySQL
 
-### Architecture on Cloud (e.g. Railway / Render / AWS)
-1. **Frontend Hosting:** Host `frontend/dist` on Vercel, Netlify, or Cloudflare Pages.
-   - Environment Variable: `VITE_API_URL=https://api.devnestlabs.shop/api/v1`
-2. **Backend Hosting:** Deploy Spring Boot JAR or Docker container to Render, Railway, or AWS Elastic Beanstalk.
-   - Environment Variables:
-     - `ANTHROPIC_API_KEY=sk-ant-...`
-     - `CLAUDE_MODEL=claude-3-5-sonnet-20241022`
-     - `devnest.cors.allowed-origins=https://devnestlabs.shop,https://www.devnestlabs.shop`
-3. **DNS Configuration for `devnestlabs.shop`:**
-   - CNAME `www` -> Points to Vercel/Netlify host
-   - A Record `@` -> Points to frontend hosting IP
-   - CNAME `api` -> Points to backend service host (e.g. `devnest-backend.up.railway.app`)
-4. **SSL / HTTPS:** Enable automatic Let's Encrypt certificates on Vercel/Render.
+DevNest Labs uses Spring Data JPA entities, meaning switching from SQLite to a production MySQL instance requires **zero Java code changes**.
+
+### Step 1: Add MySQL Driver Dependency to `backend/pom.xml`
+```xml
+<dependency>
+    <groupId>com.mysql</groupId>
+    <artifactId>mysql-connector-j</artifactId>
+    <scope>runtime</scope>
+</dependency>
+```
+
+### Step 2: Configure Environment Variables in `application.yml` or Production Shell
+```powershell
+# Set database environment variables:
+$env:DB_URL="jdbc:mysql://<your-mysql-host>:3306/devnest_db?useSSL=true&serverTimezone=UTC"
+$env:DB_DRIVER="com.mysql.cj.jdbc.Driver"
+$env:DB_DIALECT="org.hibernate.dialect.MySQLDialect"
+$env:SPRING_DATASOURCE_USERNAME="devnest_user"
+$env:SPRING_DATASOURCE_PASSWORD="secure_mysql_password"
+```
+
+Spring Boot will automatically connect to MySQL, create/update the `users` table via Hibernate (`ddl-auto: update`), and use MySQL seamlessly.
+

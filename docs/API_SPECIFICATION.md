@@ -9,7 +9,7 @@
 ## 1. System Health Check
 
 ### `GET /health`
-Returns the status of the DevNest Labs backend service and Claude API configuration.
+Returns the status of the DevNest Labs backend service and Gemini API configuration.
 
 **Response `200 OK`:**
 ```json
@@ -17,10 +17,10 @@ Returns the status of the DevNest Labs backend service and Claude API configurat
   "status": "UP",
   "application": "DevNest Labs Backend",
   "version": "1.0.0",
-  "timestamp": "2026-10-11T17:30:00Z",
+  "timestamp": "2026-10-12T17:30:00Z",
   "details": {
-    "claudeApiConfigured": true,
-    "activeModel": "claude-3-5-sonnet-20241022",
+    "geminiApiConfigured": true,
+    "activeModel": "gemini-3.8-flash",
     "javaVersion": "21.0.12.1",
     "uptimeMillis": 128450
   }
@@ -29,7 +29,95 @@ Returns the status of the DevNest Labs backend service and Claude API configurat
 
 ---
 
-## 2. Explain Code
+## 2. Authentication & User Management
+
+### `POST /auth/signup`
+Registers a new developer account into the SQLite database, hashes the password using BCrypt, and returns a signed session JWT token.
+
+**Request Payload:**
+```json
+{
+  "name": "Jane Developer",
+  "email": "jane@example.com",
+  "password": "securePassword123"
+}
+```
+*Constraints:*
+- `name`: Required, 2 to 50 characters.
+- `email`: Required, valid email format, unique.
+- `password`: Required, minimum 6 characters.
+
+**Response `201 Created`:**
+```json
+{
+  "success": true,
+  "feature": "auth",
+  "message": "Account created successfully",
+  "result": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": {
+      "id": 1,
+      "name": "Jane Developer",
+      "email": "jane@example.com",
+      "createdAt": "2026-10-12T17:40:00Z"
+    }
+  }
+}
+```
+
+### `POST /auth/login`
+Authenticates existing credentials against the SQLite database and returns a signed session JWT token.
+
+**Request Payload:**
+```json
+{
+  "email": "jane@example.com",
+  "password": "securePassword123"
+}
+```
+
+**Response `200 OK`:**
+```json
+{
+  "success": true,
+  "feature": "auth",
+  "message": "Signed in successfully",
+  "result": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": {
+      "id": 1,
+      "name": "Jane Developer",
+      "email": "jane@example.com",
+      "createdAt": "2026-10-12T17:40:00Z"
+    }
+  }
+}
+```
+
+### `GET /auth/me`
+Fetches the authenticated user profile using the JWT Bearer token in the request header.
+
+**Headers:**
+- `Authorization: Bearer <token>`
+
+**Response `200 OK`:**
+```json
+{
+  "success": true,
+  "feature": "auth",
+  "message": "User profile retrieved",
+  "result": {
+    "id": 1,
+    "name": "Jane Developer",
+    "email": "jane@example.com",
+    "createdAt": "2026-10-12T17:40:00Z"
+  }
+}
+```
+
+---
+
+## 3. Explain Code
 
 ### `POST /ai/explain`
 Analyzes provided source code and returns a structured explanation.
@@ -56,45 +144,39 @@ Analyzes provided source code and returns a structured explanation.
   "result": {
     "summary": "This method computes the arithmetic sum of two integer inputs and returns the result.",
     "steps": [
-      "Accepts two integer arguments `a` and `b`.",
-      "Performs addition using the `+` operator.",
-      "Returns the sum to the caller without mutating inputs."
+      "Accepts two integer arguments a and b.",
+      "Performs addition using the + operator.",
+      "Returns the evaluated integer sum to caller."
     ],
     "keyComponents": [
-      "Parameters: `a` and `b` are primitive 32-bit signed integers.",
-      "Return: primitive int value representing the sum."
+      "a (int): First addend",
+      "b (int): Second addend",
+      "return a + b: Computes deterministic addition"
     ],
-    "example": "add(2, 3) returns 5",
+    "example": "Invocation: add(5, 7)\nReturns: 12",
     "potentialIssues": [
-      "Integer overflow if the sum exceeds Integer.MAX_VALUE (2,147,483,647)."
-    ],
-    "markdownContent": "### Summary\n..."
-  },
-  "timestamp": 1791740000000
+      "Integer overflow if adding values whose sum exceeds Integer.MAX_VALUE"
+    ]
+  }
 }
 ```
 
 ---
 
-## 3. Debug Error
+## 3. Diagnose & Debug Error
 
 ### `POST /ai/debug`
-Diagnoses an error stack trace or exception and generates fixes.
+Diagnoses errors, ranks probable causes, and generates corrected code snippets.
 
 **Request Payload:**
 ```json
 {
-  "error": "java.lang.NullPointerException: Cannot invoke \"String.length()\" because \"str\" is null",
+  "error": "NullPointerException: Cannot invoke 'String.length()' because 'str' is null",
   "code": "public int getLength(String str) { return str.length(); }",
   "language": "java",
-  "expectedBehavior": "Return 0 when string is null"
+  "expectedBehavior": "Should return 0 for null inputs instead of throwing an exception"
 }
 ```
-*Constraints:*
-- `error`: Required, 1 to 6,000 characters.
-- `code`: Optional, up to 12,000 characters.
-- `language`: String.
-- `expectedBehavior`: Optional, up to 2,000 characters.
 
 **Response `200 OK`:**
 ```json
@@ -103,21 +185,19 @@ Diagnoses an error stack trace or exception and generates fixes.
   "feature": "debug",
   "message": "Error analyzed successfully",
   "result": {
-    "errorMeaning": "A NullPointerException occurred because length() was invoked on a null reference.",
+    "errorMeaning": "A NullPointerException occurs when attempting to invoke an instance method on a null reference.",
     "likelyCauses": [
-      "1. (Most likely) `str` parameter passed to getLength was null.",
-      "2. Upstream caller did not validate object existence."
+      "1. Parameter 'str' passed as null into getLength()",
+      "2. Absence of defensive null checks before dereferencing"
     ],
-    "suggestedSolution": "Add a defensive check for null before invoking String.length().",
-    "correctedCode": "public int getLength(String str) {\n    return str != null ? str.length() : 0;\n}",
+    "suggestedSolution": "Add a null check returning 0 or default fallback before calling length().",
+    "correctedCode": "public int getLength(String str) {\n    if (str == null) return 0;\n    return str.length();\n}",
     "verificationSteps": [
-      "Pass null to getLength and assert return value is 0.",
-      "Pass valid strings and verify expected character lengths."
+      "Run unit test passing null argument.",
+      "Confirm return value is 0 without throwing an exception."
     ],
-    "confidenceLevel": "High",
-    "markdownContent": "..."
-  },
-  "timestamp": 1791740000000
+    "confidenceLevel": "High"
+  }
 }
 ```
 
@@ -126,7 +206,7 @@ Diagnoses an error stack trace or exception and generates fixes.
 ## 4. Generate Documentation
 
 ### `POST /ai/document`
-Generates comprehensive doc blocks in Javadoc, Markdown, or Docstring format.
+Generates structured API documentation (Javadoc, Docstring, or Markdown).
 
 **Request Payload:**
 ```json
@@ -136,10 +216,6 @@ Generates comprehensive doc blocks in Javadoc, Markdown, or Docstring format.
   "format": "javadoc"
 }
 ```
-*Constraints:*
-- `code`: Required, 1 to 12,000 characters.
-- `language`: String.
-- `format`: `javadoc` | `markdown` | `docstring` | `jsdoc`.
 
 **Response `200 OK`:**
 ```json
@@ -148,17 +224,17 @@ Generates comprehensive doc blocks in Javadoc, Markdown, or Docstring format.
   "feature": "document",
   "message": "Documentation generated successfully",
   "result": {
-    "summary": "Computes the product of two integers.",
+    "summary": "Multiplies two numbers and returns the evaluated product.",
     "parameters": [
       "a (int): The multiplicand",
       "b (int): The multiplier"
     ],
     "returnValue": "int: Product of a and b",
-    "exceptions": [],
-    "exampleUsage": "int result = multiply(4, 5); // Returns 20",
-    "generatedDocumentation": "/**\n * Computes the product of two integers.\n *\n * @param a The multiplicand\n * @param b The multiplier\n * @return Product of a and b\n */",
-    "markdownContent": "..."
-  },
-  "timestamp": 1791740000000
+    "exceptions": [
+      "ArithmeticException: In case of unhandled overflow"
+    ],
+    "exampleUsage": "int result = multiply(4, 5); // 20",
+    "generatedDocumentation": "/**\n * Multiplies two numbers.\n *\n * @param a The multiplicand\n * @param b The multiplier\n * @return The product of a and b\n */"
+  }
 }
 ```

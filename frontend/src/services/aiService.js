@@ -8,9 +8,11 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/
 async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
   
+  const token = localStorage.getItem('devnest_auth_token');
   const defaultHeaders = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
   };
 
   try {
@@ -40,7 +42,7 @@ async function request(endpoint, options = {}) {
 
 export const aiService = {
   /**
-   * Check backend health and Claude API status
+   * Check backend health and Gemini API status
    */
   async checkHealth() {
     return request('/health', { method: 'GET' });

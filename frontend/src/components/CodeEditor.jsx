@@ -52,7 +52,7 @@ export default function CodeEditor({
   };
 
   const getSubmitButtonText = () => {
-    if (isLoading) return 'Analyzing with Claude...';
+    if (isLoading) return 'Analyzing with Gemini...';
     switch (activeFeature) {
       case 'explain': return 'Explain Code';
       case 'debug': return 'Diagnose & Debug';

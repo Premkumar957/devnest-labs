@@ -6,7 +6,8 @@ import {
   Moon, 
   History, 
   ShieldCheck, 
-  Info 
+  Info,
+  LogOut
 } from 'lucide-react';
 
 export default function Navbar({ 
@@ -17,7 +18,10 @@ export default function Navbar({
   backendStatus, 
   historyCount, 
   setIsHistoryOpen,
-  openModal 
+  openModal,
+  currentUser,
+  onOpenAuthModal,
+  onLogout
 }) {
   return (
     <header className="navbar">
@@ -106,20 +110,75 @@ export default function Navbar({
           {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
         </button>
 
-        {/* GitHub link button */}
-        <a 
-          href="https://github.com" 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          className="icon-btn"
-          title="View on GitHub"
-          id="github-repo-link"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
-            <path d="M9 18c-4.51 2-5-2-7-2" />
-          </svg>
-        </a>
+        {/* User Authentication state */}
+        {currentUser ? (
+          <div 
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              background: 'var(--bg-tertiary)',
+              border: '1px solid var(--border-subtle)',
+              padding: '0.25rem 0.5rem 0.25rem 0.6rem',
+              borderRadius: 'var(--radius-full)',
+              marginLeft: '0.25rem'
+            }}
+            title={`Signed in as ${currentUser.email}`}
+            id="nav-user-pill"
+          >
+            <div 
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, var(--accent-primary), #a855f7)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                color: '#ffffff'
+              }}
+            >
+              {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+            </div>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {currentUser.name ? currentUser.name.split(' ')[0] : 'User'}
+            </span>
+            <button
+              type="button"
+              onClick={onLogout}
+              className="icon-btn"
+              title="Sign Out"
+              style={{ width: '26px', height: '26px', borderRadius: '50%' }}
+              id="nav-logout-btn"
+              aria-label="Sign Out"
+            >
+              <LogOut size={13} />
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: '0.25rem' }}>
+            <button
+              type="button"
+              className="nav-tab-btn"
+              onClick={() => onOpenAuthModal('login')}
+              id="nav-login-btn"
+              style={{ padding: '0.45rem 0.85rem', fontSize: '0.85rem' }}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => onOpenAuthModal('signup')}
+              id="nav-signup-btn"
+              style={{ padding: '0.45rem 0.95rem', fontSize: '0.85rem' }}
+            >
+              Sign Up
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );

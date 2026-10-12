@@ -28,12 +28,14 @@ class AiControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
-    @DisplayName("GET /api/v1/health should return UP status")
+    @DisplayName("GET /api/v1/health should return UP status and Gemini API configuration")
     void testHealthEndpoint() throws Exception {
         mockMvc.perform(get("/api/v1/health"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("UP"))
-                .andExpect(jsonPath("$.application").value("DevNest Labs Backend"));
+                .andExpect(jsonPath("$.application").value("DevNest Labs Backend"))
+                .andExpect(jsonPath("$.details.geminiApiConfigured").value(true))
+                .andExpect(jsonPath("$.details.activeModel").value("gemini-3.8-flash"));
     }
 
     @Test
